@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/lit.svg" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Leaves</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet">
+  <link href='https://fonts.googleapis.com/icon?family=Material+Icons' rel='stylesheet'>
+  <link href='https://fonts.googleapis.com/icon?family=Material+Icons+Outlined' rel='stylesheet'>
+
+  <script type="module" src="./src/index.ts"></script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/serviceworker.js")
+        .then(function(reg) {
+          console.log("Service Worker:", reg.scope);
+        })
+        .catch(function(err) {
+          console.log("Service worker registration failed:", err);
+        })
+    }
+  </script>
+
+</head>
+
+<body theme="light">
+  <leaf-main></leaf-main>
+</body>
+
+</html>
