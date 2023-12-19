@@ -133,6 +133,11 @@ export class LeafPage extends LitElement {
                   icon="edit" label="Editor">
                 </kor-menu-item>
               </a>
+              <a href="/dev">
+                <kor-menu-item 
+                  icon="construction" label="Dev">
+                </kor-menu-item>
+              </a>
               <a href="/scratch">
                 <kor-menu-item 
                   icon="bolt" label="Scratch">

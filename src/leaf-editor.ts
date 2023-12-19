@@ -65,11 +65,19 @@ private onEvent(event) {
 
 firstUpdated(): void {
     this.view = new EditorView({
-      doc: `import time
-
-for i in range(10):
-    print(i, i**4)
-    time.sleep_ms(10)`,
+      doc: `import asyncio
+      
+async def main():
+    for i in range(10):
+        print('main', i, i**4)
+        await asyncio.sleep(1)
+        
+async def launch():
+    print("launch ...", dir(main))
+    await main()
+    print("done")
+    
+asyncio.create_task(launch())`,
       parent: this.renderRoot.querySelector('#editor'),
       extensions: [
         basicSetup, 

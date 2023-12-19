@@ -82,6 +82,7 @@ export class LeafMain extends LitElement {
       { path: '/log', component: 'leaf-log' },
       { path: '/settings', component: 'leaf-settings' },
       { path: '/editor', component: 'leaf-editor' },
+      { path: '/dev', component: 'leaf-nb' },
       { path: '/scratch', component: 'leaf-scratch' },
       { path: '(.*)', redirect: '/view/0' },
     ]);

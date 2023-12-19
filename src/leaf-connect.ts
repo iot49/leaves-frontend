@@ -64,17 +64,18 @@ export class LeafConnect extends LitElement {
         <nav slot="nav">Connect</nav>
 
         <div class="field">
-            <kor-input id="ws" label="WS URL" value="ws://leaf.local/ws"></kor-input>
-            <kor-button @click=${this.connect_ws} label="Connect WS" color="primary">
-                <kor-icon icon="wifi" color="white" size="m"></kor-icon>
-            </kor-button>
+          <!-- <kor-input id="ws" label="WS URL" value="ws://leaf.local/ws"></kor-input> -->
+          <kor-input id="ws" label="WS URL" value="ws://10.0.0.177/ws"></kor-input>
+          <kor-button @click=${this.connect_ws} label="Connect WS" color="primary">
+            <kor-icon icon="wifi" color="white" size="m"></kor-icon>
+          </kor-button>
         </div>
 
         <div class="field">
-            <kor-input id="ble" label="APP" value="RV"></kor-input>
-            <kor-button @click=${this.connect_ble} label="Connect BLE" color="primary">
-                <kor-icon icon="bluetooth" color="white" size="m"></kor-icon>
-            </kor-button>
+          <kor-input id="ble" label="APP" value="RV"></kor-input>
+          <kor-button @click=${this.connect_ble} label="Connect BLE" color="primary">
+            <kor-icon icon="bluetooth" color="white" size="m"></kor-icon>
+          </kor-button>
         </div>
       </leaf-page>
     `;

@@ -16,7 +16,7 @@
   <script type="module" src="./src/index.ts"></script>
 
   <script>
-    if ("serviceWorker" in navigator) {
+    if (false && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/serviceworker.js")
         .then(function(reg) {
           console.log("Service Worker:", reg.scope);

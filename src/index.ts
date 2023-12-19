@@ -7,6 +7,8 @@ export * from "./leaf-log";
 export * from "./leaf-settings";
 export * from "./leaf-editor";
 export * from "./leaf-code";
+export * from "./leaf-nb";
+export * from "./leaf-nb-item";
 
 export * from "./leaf-entities";
 export * from "./leaf-entity";
