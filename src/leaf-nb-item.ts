@@ -75,7 +75,6 @@ connectedCallback() {
   super.connectedCallback();
   this.eventbus.addOnEventListener(this.onEvent.bind(this));
   this.addEventListener("onclick", () => {
-    console.log("click");
     (this.renderRoot.querySelector('#context-menu') as any).style.display = 'none'
   });
   this.addEventListener("contextmenu", this.context_menu);
@@ -118,31 +117,14 @@ firstUpdated(): void {
     return html`
       <main @click=${() => (this.renderRoot.querySelector('#context-menu') as any).style.display = 'none'}>
         <div id="editor"></div>
-        <!-- <kor-button @click=${this.exec_cmd} label="Exec"></kor-button> --> 
         <leaf-code>${this.output}</leaf-code>
       </main>
 
-      <div id="context-menu">
-      <kor-menu-item 
-          @click=${() => this.context_cmd('run')}
-          icon="arrow_right" 
-          label="Run">
-        </kor-menu-item>
-        <kor-menu-item 
-          @click=${() => this.context_cmd('clear')}
-          icon="cancel_presentation" 
-          label="Clear Output">
-        </kor-menu-item>
-        <kor-menu-item 
-          @click=${() => this.context_cmd('append')}
-          icon="post_add" 
-          label="Append Cell">
-        </kor-menu-item>
-        <kor-menu-item 
-          @click=${() => this.context_cmd('delete')}
-          icon="delete" 
-          label="Delete">
-        </kor-menu-item>
+      <div id="context-menu" @click=${this.context_cmd}>
+        <kor-menu-item id="run" icon="arrow_right" label="Run"></kor-menu-item>
+        <kor-menu-item id="clear" icon="cancel_presentation" label="Clear Output"></kor-menu-item>
+        <kor-menu-item id="append" icon="post_add" label="Append Cell"></kor-menu-item>
+        <kor-menu-item id="delete" icon="delete" label="Delete"></kor-menu-item>
       </div>
     `
   }
@@ -162,20 +144,16 @@ firstUpdated(): void {
   context_menu(event: PointerEvent) {
     if (event.button != 2) return;
     // right click
-    
-    console.log('context', event.clientX, event.clientY);
-
     const style: any = (this.renderRoot.querySelector('#context-menu') as any).style;
     style.display = 'block';
     style.position = 'absolute';
     style.top = event.clientY + 'px';
     style.left = event.clientX + 'px';
-
     return event.preventDefault();
   }
 
-  context_cmd(cmd: string) {
-    switch (cmd) {
+  async context_cmd(event) {
+    switch (event.target.id) {
       case 'run':
         this.exec_cmd();
         break

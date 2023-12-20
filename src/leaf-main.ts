@@ -93,6 +93,7 @@ export class LeafMain extends LitElement {
 
   render() {
     return html`
+      <!-- <link rel="stylesheet" href="./index.css"> -->
       <main>
         <div id="outlet"></div>
       </main>

@@ -9,6 +9,7 @@ export * from "./leaf-editor";
 export * from "./leaf-code";
 export * from "./leaf-nb";
 export * from "./leaf-nb-item";
+export * from "./leaf-file-viewer";
 
 export * from "./leaf-entities";
 export * from "./leaf-entity";

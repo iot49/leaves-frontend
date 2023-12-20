@@ -136,6 +136,7 @@ export class LeafPage extends LitElement {
               <a href="/dev">
                 <kor-menu-item 
                   icon="construction" label="Dev">
+                  ?disabled=${!this.eventbus.connected}>
                 </kor-menu-item>
               </a>
               <a href="/scratch">
