@@ -41,27 +41,16 @@ export class LeafNbItem extends LitElement {
     // TODO: import from index.css
     :host {
       --base-0: 218, 214, 0;
-      display: flex;
     }
     main {
       margin: 10px;
     }
     #editor {
-      background-color: rgb(252,252,252)
+      background-color: rgb(252,252,252);
     }
     kor-button {
       margin-top: 10px;
       margin-bottom: 10px;
-    }
-
-    #context-menu {
-      display: none;
-      padding: 0.2rem 0.8rem;
-      border-radius: var(--border-radius);
-      font-size: 75%;
-      background-color: rgb(var(--base-4));
-      box-shadow: var(--shadow-1);
-      z-index: 1000;        
     }
   `
 
@@ -73,16 +62,12 @@ constructor() {
 
 connectedCallback() {
   super.connectedCallback();
+  // catch print and log events
   this.eventbus.addOnEventListener(this.onEvent.bind(this));
-  this.addEventListener("onclick", () => {
-    (this.renderRoot.querySelector('#context-menu') as any).style.display = 'none'
-  });
-  this.addEventListener("contextmenu", this.context_menu);
 }
 
 disconnectedCallback(): void {
   this.eventbus.removeOnEventListener(this.onEvent);
-  this.removeEventListener("contextmenu", this.context_menu);
   super.disconnectedCallback();
 }
 
@@ -101,7 +86,7 @@ private onEvent(event) {
 
 firstUpdated(): void {
     this.view = new EditorView({
-      doc: '',
+      doc: 'print(2**1234)',
       parent: this.renderRoot.querySelector('#editor'),
       extensions: [
         basicSetup, 
@@ -115,17 +100,19 @@ firstUpdated(): void {
 
   render() {
     return html`
-      <main @click=${() => (this.renderRoot.querySelector('#context-menu') as any).style.display = 'none'}>
+      <main>
         <div id="editor"></div>
+        <!-- results -->
         <leaf-code>${this.output}</leaf-code>
+
+        <leaf-popup @click=${this.context_cmd}>
+          <kor-menu-item id="run" icon="arrow_right" label="Run"></kor-menu-item>
+          <kor-menu-item id="clear" icon="cancel_presentation" label="Clear Output"></kor-menu-item>
+          <kor-menu-item id="append" icon="post_add" label="Append Cell"></kor-menu-item>
+          <kor-menu-item id="delete" icon="delete" label="Delete"></kor-menu-item>
+        </leaf-popup>
       </main>
 
-      <div id="context-menu" @click=${this.context_cmd}>
-        <kor-menu-item id="run" icon="arrow_right" label="Run"></kor-menu-item>
-        <kor-menu-item id="clear" icon="cancel_presentation" label="Clear Output"></kor-menu-item>
-        <kor-menu-item id="append" icon="post_add" label="Append Cell"></kor-menu-item>
-        <kor-menu-item id="delete" icon="delete" label="Delete"></kor-menu-item>
-      </div>
     `
   }
 
@@ -139,17 +126,6 @@ firstUpdated(): void {
     if (this === this.parentElement.lastElementChild) {
       this.parentElement.appendChild(new LeafNbItem());
     }
-  }
-
-  context_menu(event: PointerEvent) {
-    if (event.button != 2) return;
-    // right click
-    const style: any = (this.renderRoot.querySelector('#context-menu') as any).style;
-    style.display = 'block';
-    style.position = 'absolute';
-    style.top = event.clientY + 'px';
-    style.left = event.clientX + 'px';
-    return event.preventDefault();
   }
 
   async context_cmd(event) {
@@ -168,8 +144,6 @@ firstUpdated(): void {
         if (this.parentElement.children.length > 1) this.remove();
         break
     }
-    const style: any = (this.renderRoot.querySelector('#context-menu') as any).style;
-    style.display = 'none';
   }
 
 }

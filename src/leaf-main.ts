@@ -84,11 +84,12 @@ export class LeafMain extends LitElement {
       { path: '/editor', component: 'leaf-editor' },
       { path: '/dev', component: 'leaf-nb' },
       { path: '/scratch', component: 'leaf-scratch' },
+      { path: '/grid', component: 'leaf-grid-example' },
       { path: '(.*)', redirect: '/view/0' },
     ]);
-    // Router.go('/editor');
+    Router.go('/grid');
     // Router.go('/scratch');
-    Router.go(this._eventbus.connected ? '/' : '/connect');
+    // Router.go(this._eventbus.connected ? '/' : '/connect');
   }
 
   render() {

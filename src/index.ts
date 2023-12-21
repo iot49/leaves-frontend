@@ -10,11 +10,13 @@ export * from "./leaf-code";
 export * from "./leaf-nb";
 export * from "./leaf-nb-item";
 export * from "./leaf-file-viewer";
+export * from "./leaf-popup";
 
 export * from "./leaf-entities";
 export * from "./leaf-entity";
 
 export * from "./leaf-scratch";
+export * from "./leaf-grid-example";
 
 import './kor/kor-styles.css';
 import './kor';

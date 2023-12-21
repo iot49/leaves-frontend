@@ -65,7 +65,8 @@ export class LeafConnect extends LitElement {
 
         <div class="field">
           <!-- <kor-input id="ws" label="WS URL" value="ws://leaf.local/ws"></kor-input> -->
-          <kor-input id="ws" label="WS URL" value="ws://10.0.0.177/ws"></kor-input>
+          <!-- <kor-input id="ws" label="WS URL" value="ws://10.0.0.177/ws"></kor-input> -->
+          <kor-input id="ws" label="WS URL" value="ws://leaf.local/ws"></kor-input>
           <kor-button @click=${this.connect_ws} label="Connect WS" color="primary">
             <kor-icon icon="wifi" color="white" size="m"></kor-icon>
           </kor-button>

@@ -21,9 +21,35 @@ export class LeafFileViewer extends LitElement {
     }
   `
 
+/*
 connectedCallback() {
   super.connectedCallback();
+  // make context menu popup disappear on click outside (no item selected)
+  this.addEventListener("onclick", () => {
+    console.log("hide context menu");
+    (this.renderRoot.querySelector('#context-menu') as any).style.display = 'none'
+  });
+  // right click events
+  this.addEventListener("contextmenu", this.context_menu);
 }
+
+
+disconnectedCallback(): void {
+  this.removeEventListener("contextmenu", this.context_menu);
+  super.disconnectedCallback();
+}
+
+context_menu(event: PointerEvent) {
+  if (event.button != 2) return;
+  // right click
+  const style: any = (this.renderRoot.querySelector('#context-menu') as any).style;
+  style.display = 'block';
+  style.position = 'absolute';
+  style.top = event.clientY + 'px';
+  style.left = event.clientX + 'px';
+  return event.preventDefault();
+}
+*/
 
 async listDirs(handles: any) {
     const entries = []
@@ -79,9 +105,18 @@ async listDirs(handles: any) {
 
   render() {
     return html`
-      <ul id="viewer" @click=${this.toggle}>
-        ${this.render_entries(this.entries_dict)}
-      </ul>
+      <main>
+        <ul id="viewer" @click=${this.toggle}>
+          ${this.render_entries(this.entries_dict)}
+        </ul>
+
+        <leaf-popup @click=${(event) => console.log("!", event, event.target.id) }>
+          <kor-menu-item id="run" icon="arrow_right" label="Run"></kor-menu-item>
+          <kor-menu-item id="clear" icon="cancel_presentation" label="Clear Output"></kor-menu-item>
+          <kor-menu-item id="append" icon="post_add" label="Append Cell"></kor-menu-item>
+          <kor-menu-item id="delete" icon="delete" label="Delete"></kor-menu-item>
+        </leaf-popup>
+      </main>
     `
   }
 
@@ -89,14 +124,13 @@ async listDirs(handles: any) {
     const t = event.target as any;
     if (!('icon' in t)) return;
     const entry = this.entries_list[parseInt(t.getAttribute('data-index'))];
-    console.log('FH', entry.name, entry.kind, entry.handle);
     if (t.parentElement.classList.contains('dir')) {
       t.icon = t.icon === 'folder' ? 'folder_open' : 'folder';
       t.parentElement.children[1].classList.toggle('closed');
     } else {
       const file = await entry.handle.getFile();
       const content = await file.text();
-      console.log('file', t, t.getAttribute('data-index'), t.label, content);
+      console.log('file', t.label, 'content:', content);
     }
   }
 

@@ -12,6 +12,7 @@ export class LeafNb extends LitElement {
     }
     main {
       display: flex;
+      flex-direction: row;
     }
     #left {
       width: 300px;
@@ -24,9 +25,13 @@ export class LeafNb extends LitElement {
     #splitter:hover {
       cursor: col-resize;
     }
+    #right {
+      background-color: yellow;
+      flex-direction: column;
+    }
   `
 
-  protected async firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+  protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
     // splitter dragging
     const left_el = this.renderRoot.querySelector('#left') as any;
     const splitter_el = this.renderRoot.querySelector('#splitter');
@@ -54,12 +59,13 @@ export class LeafNb extends LitElement {
   render() {
     return html`
       <leaf-page>
-        <nav slot="nav">Developer</nav>
-        <leaf-nb-item></leaf-nb-item>     
+        <nav slot="nav">Code Developer</nav>
         <main>
           <leaf-file-viewer id="left"></leaf-file-viewer>
           <div id="splitter"></div>
-          <leaf-nb-item id="right"></leaf-nb-item>     
+          <div id="right">
+            <leaf-nb-item ></leaf-nb-item>
+          </div>
         </main>
       </leaf-page>
     `
