@@ -17,11 +17,10 @@ export class LeafEntities extends LitElement {
   private number_of_entities = 0;
 
   protected shouldUpdate(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): boolean {
-    return this.state.size != this.number_of_entities;
+    return _changedProperties.size > 0 || this.state.size != this.number_of_entities;
   }
 
   render() {
-    // console.log("render leaf-entities", this.card.title);
     this.number_of_entities = this.state.size;
     const templates = [];
     for (const spec of this.card.entities) {

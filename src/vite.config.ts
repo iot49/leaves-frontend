@@ -5,7 +5,7 @@ import { resolve } from "path";
 
 export default defineConfig({
     // does not work (ignored)
-    base: "/leaf/",
+    // base: "/leaf/",
     build: {
         rollupOptions: {
             input: {

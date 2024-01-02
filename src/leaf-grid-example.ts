@@ -28,6 +28,9 @@ export class LeafGridExample extends LitElement {
         header, footer, article, aside {
             border: 1px black dotted;
         }
+        article {
+          background-color: yellow;
+        }
     `
 
     render() {

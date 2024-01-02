@@ -1,110 +1,108 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
-import { consume } from '@lit/context';
+import { customElement } from 'lit/decorators.js';
+import { EditorView, basicSetup } from "codemirror";
+import { EditorState, Compartment } from "@codemirror/state";
 
-import { type IEventBus, eventbusContext } from './app/contexts';
-
-import { EditorView, basicSetup } from "codemirror"
-// import { javascript } from "@codemirror/lang-javascript"
-import { python } from '@codemirror/lang-python';
+import { keymap } from "@codemirror/view";
+import { indentWithTab } from "@codemirror/commands";
+import { acceptCompletion, } from '@codemirror/autocomplete';
 import { indentUnit } from '@codemirror/language';
+
+import { python } from '@codemirror/lang-python';
+import { javascript } from '@codemirror/lang-javascript';
+import { markdown } from '@codemirror/lang-markdown';
+import { json } from '@codemirror/lang-json';
+
+
+// yaml: https://github.com/codemirror/dev/issues/306
+// markdown: https://marked.js.org/demo
+// sizing: https://discuss.codemirror.net/t/fill-a-div-with-the-editor/5248/5
 
 
 @customElement('leaf-editor')
 export class LeafEditor extends LitElement {
 
-  @consume({ context: eventbusContext, subscribe: false })
-  @property({ attribute: false })
-  private eventbus: IEventBus;
+  private _state: EditorState;
+  private _view: EditorView;
+  private language = new Compartment();
 
-  @state()
-  private printer = "";
+  constructor(initial_doc: string, language: string) {
+    super();
+    this._state = EditorState.create({
+      doc: initial_doc,
+      extensions: [
+        basicSetup, 
+        // EditorView.updateListener.of(update => console.log('E', update)),
+        // keymap.of([ { key: 'Tab', run: acceptCompletion } ]), 
+        keymap.of([ indentWithTab ]),
+        this.language.of(this.languageFor(language)),
+        indentUnit.of("    "), 
+      ],
 
-  //private initialState: EditorState;
-  private view: EditorView;
+    })
+  }
+
+  public switchLanguage(language: string) {
+    this._view.dispatch({
+      effects: this.language.reconfigure(this.languageFor(language))
+    });
+    console.log("leaf-editor: language should be switched by now");
+  }
+
+  public async save(handle: FileSystemHandle) {
+    // TODO: if (hasChanged)
+    const writable = await (handle as any).createWritable();
+    await writable.write(this.getDoc());
+    await writable.close();
+    console.log('saved', handle.name);
+  }
+
+  public getDoc() {
+    return this._view.state.doc.toString();
+  }
+
+  public setDoc(doc: string) {
+    this._view.dispatch({changes: {
+      from: 0,
+      to: this._view.state.doc.length,
+      insert: doc
+    }});  
+  }
+
+  public setFocus() {
+    this._view.focus();
+  }
+
+  private languageFor(lang: string) {
+    const languages = {
+      py: python,
+      js: javascript,
+      ts: javascript,
+      md: markdown,
+      json: json,
+    }
+    return lang in languages ? languages[lang]() : [];    
+  }
+
 
   static styles = css`
-    // TODO: import from index.css
-    :host {
-      --base-0: 218, 214, 0;
-      display: flex;
-    }
-    main {
-      margin: 10px;
-    }
     #editor {
-      background-color: rgb(252,252,252)
-    }
-    kor-button {
-      margin-top: 10px;
-      margin-bottom: 10px;
+      background-color: rgb(252,252,252);
+      background-color: rgb(var(--base-2));
     }
   `
 
-connectedCallback() {
-  super.connectedCallback();
-  this.eventbus.addOnEventListener(this.onEvent.bind(this));
-}
-
-disconnectedCallback(): void {
-  this.eventbus.removeOnEventListener(this.onEvent);
-  super.disconnectedCallback()
-}
-
-private onEvent(event) {
-  switch (event.type) {
-    case 'print':
-      this.printer += event.data
-      break; 
-    case 'log':
-      if (event.name === "user_features.dev")
-        this.printer += event.message
-      break;
-  }
-}
-
-firstUpdated(): void {
-    this.view = new EditorView({
-      doc: `import asyncio
-      
-async def main():
-    for i in range(10):
-        print('main', i, i**4)
-        await asyncio.sleep(1)
-        
-async def launch():
-    print("launch ...", dir(main))
-    await main()
-    print("done")
-    
-asyncio.create_task(launch())`,
+  firstUpdated(): void {
+    const state = this._state;
+    this._view = new EditorView({
+      state,
       parent: this.renderRoot.querySelector('#editor'),
-      extensions: [
-        basicSetup, 
-        python(),
-        indentUnit.of("    "),
-      ],
     });
+    this._view.focus();
   }
 
   render() {
-    return html`
-      <leaf-page>
-        <nav slot="nav">Editor</nav>
-
-        <main>
-          <div id="editor"></div>
-          <kor-button @click=${this.exec_cmd} label="Exec" icon="arrow_right"></kor-button>
-
-          <leaf-code>${this.printer}</leaf-code>
-        </main>
-      </leaf-page>
-    `
-  }
-
-  exec_cmd() {
-    this.printer = ""
-    this.eventbus.postEvent({ type: 'exec', code: this.view.state.doc.toString() });
+    return html`<div id="editor"></div>`;
   }
 
 }

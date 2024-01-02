@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 
 
 @customElement('leaf-popup')
@@ -13,43 +13,35 @@ export class LeafPopup extends LitElement {
       font-size: 75%;
       background-color: rgb(var(--base-4));
       box-shadow: var(--shadow-1);
-      z-index: 1000;        
+      z-index: 1000;      
+      padding: 0;
+      margin: 0;
     }
     .hidden {
       display: none;
     }
-
   `
 
-  connectedCallback() {
-    super.connectedCallback();
-    console.log('connected', this, this.parentElement);
+  @property({ attribute: false, reflect: true })
+  target: HTMLElement;
 
-    // right click events
-    this.parentElement.addEventListener("contextmenu", (event: PointerEvent) => {
-      // show context menu
-      const cm: HTMLElement = this.renderRoot.querySelector('.context-menu');
-      cm.style.position = 'absolute';
-      cm.style.top = event.clientY + 'px';
-      cm.style.left = event.clientX + 'px';      
-      cm.classList.remove("hidden");
+  public show(event: MouseEvent) {
+    this.target = event.target as HTMLElement;
+    // show popup
+    const cm: HTMLElement = this.renderRoot.querySelector('.context-menu');
+    cm.style.position = 'absolute';
+    cm.style.top = event.clientY + 'px';
+    cm.style.left = event.clientX + 'px';
+    cm.classList.remove("hidden");
+  }
 
-      document.addEventListener("click", () => {
-        // hide context menu
-        cm.classList.add("hidden");
-      }, { once: true });     
-
-      return event.preventDefault();
-    });
+  public hide() {
+    const cm: HTMLElement = this.renderRoot.querySelector('.context-menu');
+    cm.classList.add("hidden");
   }
 
   render() {
-    console.log('render');
-    return html`
-      <div class="context-menu hidden">
-        <slot></slot>
-      </div>
-    `
+    return html`<div class="context-menu hidden"><slot></slot></div>`
   }
 
 }

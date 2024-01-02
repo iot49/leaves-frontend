@@ -1,9 +1,10 @@
 import { html, LitElement, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { choose } from 'lit/directives/choose.js';
 
 import { type Config, configContext } from './app/contexts';
+import { go, location } from './app/app';
 
 
 @customElement('leaf-view')
@@ -21,7 +22,7 @@ export class LeafView extends LitElement {
       nav {
         display: flex;
       }
-      nav > a {
+      nav > div {
         color: green;
         margin-right: 1rem;
       }
@@ -34,26 +35,32 @@ export class LeafView extends LitElement {
     `
   ];
 
-  private get view_id(): number {
-    const path = window.location.pathname;
-    const n = Number(path.substring(path.lastIndexOf('/') + 1));
-    return n ? n : 0;
-  }
+  @state()
+  private view_id = 0;
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    window.addEventListener('go', (ev: CustomEvent) => {
+      const location = ev.detail.location;
+      const n = Number(location.substring(location.lastIndexOf('/') + 1));
+      this.view_id = n ? n : 0;
+    });
+  }  
+    
   render() {
-    if (!this.config) {
-      return html`<kor-spinner label="Loading configuration ..."></kor-spinner>`
-    }
-
     const views = this.config.views;
-    const view_id = this.view_id >= views.length ? 0 : this.view_id;
-    const cards = views[view_id].cards;
+    const cards = views[this.view_id].cards;
 
     return html`
       <leaf-page mobile theme="view-theme">
         <nav slot="nav">
           ${views.map((view, index) =>
-            html`<a href="/view/${index}" class="${index == view_id ? 'selected' : ''}"><kor-icon color="white" icon="${view.icon}"></kor-icon></a>`
+            html`
+              <div 
+                @click=${() => go(`view/${index}`)} 
+                class="${index == this.view_id ? 'selected' : ''}">
+                <kor-icon color="white" icon="${view.icon}"></kor-icon>
+              </div>`
           )}
         </nav>
         

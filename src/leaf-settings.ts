@@ -1,18 +1,12 @@
 import { html, css, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
-import { Router } from '@vaadin/router';
 
-import { type IEventBus, eventbusContext } from './app/contexts';
 import { type Config, configContext } from './app/contexts';
-
+import { go, eventbus } from './app/app';
 
 @customElement('leaf-settings')
 export class LeafSettings extends LitElement {
-
-  @consume({ context: eventbusContext, subscribe: false })
-  @property({ attribute: false })
-  private eventbus: IEventBus;
 
   @consume({ context: configContext, subscribe: true })
   @property({ attribute: false })
@@ -68,16 +62,7 @@ export class LeafSettings extends LitElement {
 
 connectedCallback(): void {
   super.connectedCallback();
-  this.eventbus.addOnEventListener(this.ota_status_event.bind(this));
-}
-
-disconnectedCallback(): void {
-  this.eventbus.removeOnEventListener(this.ota_status_event);
-  super.disconnectedCallback()
-}
-
-ota_status_event(event) {
-  if (event.type == 'ota_status') this.ota_status = event;
+  this.addEventListener('event-bus-message', event => { if (event.type == 'ota_status') this.ota_status = event } );
 }
 
 configTemplate() {
@@ -135,7 +120,7 @@ configTemplate() {
         `
       case 'rebooting':
         window.alert('rebooting');
-        Router.go('/');
+        go('/');
         return html`rebooting`;
       case 'not found':
         window.alert('cannot download firmware');
@@ -147,9 +132,7 @@ configTemplate() {
 
 
   render() {
-    if (!this.config) {
-      return html`<kor-spinner label="Loading configuration ..."></kor-spinner>`
-    }
+    if (!this.config) return html``;
 
     if (this.upgrading) {
       return html`
@@ -177,7 +160,7 @@ configTemplate() {
     const fw = this.firmware_index.find((el) => el.version == version);
     if (fw) {
       this.firmware_size = fw.size;
-      this.eventbus.postEvent({
+      eventbus.postEvent({
         type: 'ota_flash',
         url:  `${window.origin}/firmware/${fw.file}`,
         sha:  fw.sha

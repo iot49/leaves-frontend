@@ -1,8 +1,8 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, state, property } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 
-import { type IEventBus, eventbusContext } from './app/contexts';
+import { type Log, logContext, Config, configContext } from './app/contexts';
 
 
 /* TODO:
@@ -14,14 +14,13 @@ import { type IEventBus, eventbusContext } from './app/contexts';
 @customElement('leaf-log')
 export class LeafLog extends LitElement {
 
-  private epoch_offset = (window as any).leaf.config.app.epoch_offset;
- 
-  @consume({ context: eventbusContext, subscribe: false })
+  @consume({ context: configContext, subscribe: true })
   @property({ attribute: false })
-  private eventbus: IEventBus;
+  private config: Config;
 
-  @state({})
-  private log: Array<any>;
+  @consume({ context: logContext, subscribe: true })
+  @property({ attribute: false })
+  private log: Log;
 
   static styles = css`
     main {
@@ -60,32 +59,11 @@ export class LeafLog extends LitElement {
     }
   `
 
-  private onEvent(event) {
-    switch (event.type) {
-      case 'get_log_':
-        this.log = event.data;
-        break;
-      case 'log':
-        if (this.log) this.log = [ ...this.log, event ];
-        break;
-    }
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    this.eventbus.addOnEventListener(this.onEvent.bind(this));
-    this.eventbus.postEvent({ type: 'get_log' })
-  }
-
-  disconnectedCallback(): void {
-    this.eventbus.removeOnEventListener(this.onEvent);
-    super.disconnectedCallback()
-  }
-
   entry_template(entry) {
+    const epoch_offset = this.config.app.epoch_offset || 946684800;
     return html`
       <div class="entry">
-        <span class="timestamp">${new Date(1000*(entry.ct+this.epoch_offset)).toISOString().split('.')[0]}</span>
+        <span class="timestamp">${new Date(1000 * (entry.ct + epoch_offset)).toISOString().split('.')[0]}</span>
         <span class="level">${entry.levelname}</span>
         <span class="name">${entry.name}</span>
         <span class="message">${entry.message}</span>
@@ -94,18 +72,13 @@ export class LeafLog extends LitElement {
   }
 
   render() {
-    if (!this.log) {
-      return html`<kor-spinner label="Loading log ..."></kor-spinner>`
-    }
-
-   return html`
+    return html`
       <leaf-page>
         <nav slot="nav">Log</nav>
 
         <main>
-          ${this.log.map((log_entry) =>
-            this.entry_template(log_entry)
-          )}
+          LOG
+          ${this.log.map((log_entry) => this.entry_template(log_entry))}
         </main>
 
       </leaf-page>

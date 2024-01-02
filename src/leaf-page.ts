@@ -1,24 +1,20 @@
 import { html, LitElement, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { consume } from '@lit/context';
 
-import { type IEventBus, eventbusContext } from './app/contexts';
+import { go, eventbus } from './app/app';
 
 @customElement('leaf-page')
 export class LeafPage extends LitElement {
 
+
   @property({ type: Boolean })
   mobile: boolean;
 
-  @consume({ context: eventbusContext, subscribe: false })
-  @property({ attribute: false })
-  private eventbus: IEventBus;
-
   static styles = [
     css`
-      a { text-decoration: none; }
       .page {
         height: 100vh;
+        width: 100vw;
         display: flex;
         flex-direction: column;
       }
@@ -102,48 +98,19 @@ export class LeafPage extends LitElement {
       <div class="page ${this.mobile ? 'mobile' : ''}">
         <nav>
           <div class="leaf-icon">
-            <a href="/">
-              <kor-icon icon="favorite" color="var(--text-4)" size="m"></kor-icon>
-            </a>
+            <div @click=${() => go("/")}>
+              <kor-icon icon="eco" color="var(--text-4)" size="m"></kor-icon>
+          </div>
           </div>
           <div class="nav-slot"><slot name="nav"></slot></div>
+          <!-- right top menu -->
           <div class="menu">
             <kor-icon icon="more_vert" color="var(--text-4)"></kor-icon>
-            <div class="dropdown">
-              <a href="/connect">
-                <kor-menu-item 
-                  icon="sync_alt" 
-                  label=${this.eventbus.connected ? 'Disconnect' : 'Connect'}>
-                </kor-menu-item>
-              </a>
-              <a href="/log">
-                <kor-menu-item 
-                  icon="cabin" label="Log" 
-                  ?disabled=${!this.eventbus.connected}>
-                </kor-menu-item>
-              </a>
-              <a href="/settings">
-                <kor-menu-item 
-                  icon="settings" label="Settings"
-                  ?disabled=${!this.eventbus.connected}>
-                </kor-menu-item>
-              </a>
-              <a href="/editor">
-                <kor-menu-item 
-                  icon="edit" label="Editor">
-                </kor-menu-item>
-              </a>
-              <a href="/dev">
-                <kor-menu-item 
-                  icon="construction" label="Dev">
-                  ?disabled=${!this.eventbus.connected}>
-                </kor-menu-item>
-              </a>
-              <a href="/scratch">
-                <kor-menu-item 
-                  icon="bolt" label="Scratch">
-                </kor-menu-item>
-              </a>
+            <div class="dropdown" @click=${e => go(e.target.id)}>
+                <kor-menu-item id="log"      icon="cabin"        label="Log"></kor-menu-item>
+                <kor-menu-item id="settings" icon="settings"     label="Settings"></kor-menu-item>
+                <kor-menu-item id="dev"      icon="construction" label="Dev"></kor-menu-item>
+                <kor-menu-item id="scratch"  icon="bolt"         label="Scratch"> </kor-menu-item>
             </div>
           </div>  
         </nav>
