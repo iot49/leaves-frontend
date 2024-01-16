@@ -1,18 +1,23 @@
-import { html, LitElement, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { html, css, LitElement } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 
 import { go, eventbus } from './app/app';
+import { shared_css } from './assets/css/shared_styles';
 
 @customElement('leaf-page')
 export class LeafPage extends LitElement {
 
-
   @property({ type: Boolean })
   mobile: boolean;
 
+  @state()
+  private connected = eventbus.connected;
+
   static styles = [
+    shared_css,
     css`
       .page {
+        box-sizing: content-box;
         height: 100vh;
         width: 100vw;
         display: flex;
@@ -20,34 +25,51 @@ export class LeafPage extends LitElement {
       }
 
       nav {
+        box-sizing: content-box;
+        height: var(--page-header-height);
         display: flex;
+        flex: 0 0 auto;
         align-items: center;
-        min-height: 2.75rem;
         line-height: 1rem;
         padding: 0 0.8rem;
-        background-color: rgb(var(--base-0));
-        color: var(--text-4);
+        background-color: var(--sl-color-primary-500);
+        color: white;
         font-weight: bold;
         font-size: 150%;
       }
 
+      main {
+        box-sizing: content-box;
+        height: calc(100vh - var(--page-header-height));
+        display: flex;
+        flex: 1 1 auto;
+        color: var(--sl-color-neutral-1000);
+        background-color: var(--sl-color-neutral-0);
+       }
+
       .nav-slot {
         display: flex;
-        flex: 1;
+        flex: 1 1 auto;
         justify-content: center;
       }
 
-      .leaf-icon {
-        display: flex;
-        flex: 1;
+      .leaf-icon, .menu > sl-icon {
+        border-radius: 50%;
         justify-content: flex-start;
+      }
+      .leaf-icon:hover, .menu > sl-icon:hover {
+        background-color:  var(--sl-color-primary-600);
       }
 
       .menu {
         display: flex;
-        flex: 1;
+        flex: 0 0 auto;
         justify-content: flex-end;
-        color: var(--bg-color);
+        padding-right: 0.2em;
+        color: var(--sl-color-neutral-0);
+      }
+      .menu > sl-icon {
+        color: white;
       }
 
       .dropdown {
@@ -56,21 +78,18 @@ export class LeafPage extends LitElement {
         right: 0.5rem;
         top: 2rem;
         bottom: auto;
-        padding: 0.8rem;
-        border-radius: var(--border-radius);
-        font-size: 75%;
-        background-color: rgb(var(--base-4));
-        box-shadow: var(--shadow-1);
-        z-index: 1000;        
+        z-index: 1000;
       }
       .menu:hover .dropdown {
         display: inline;
       }
-
-      main {
-        background-color: var(--bg-color);
-        overflow-y: auto;
-        height: 100%;
+      sl-menu-item {
+        display: flex;
+        align-items: center;
+      }
+      sl-menu-item > sl-icon {
+        margin-right: 20px;
+        font-size: 18px;
       }
 
       .mobile > nav > .leaf-icon {
@@ -80,40 +99,83 @@ export class LeafPage extends LitElement {
       .mobile > nav > .nav-slot {
         justify-content: flex-start;
       }
+
+      .connected {
+        font-size: var(--sl-font-size-small);
+        position: absolute;
+        top: 3px;
+        right: 3px;
+      }
       
-      @media screen and (max-width: 400px) {
+      @media screen and (max-width: 450px) {
         .mobile {
           flex-direction: column-reverse;
+          background-color: yellow;
         }
-        .mobile > nav > .menu > .dropdown {
+        .dropdown {
+          background-color: pink;
           top: auto;
           bottom: 2rem;
         }
       }
-      `
+    `
   ];
+
+  private connected_cb() { this.connected = eventbus.connected; }
+  private connected_cb_bound = this.connected_cb.bind(this);
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    window.addEventListener('event-bus-status', this.connected_cb_bound);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener('event-bus-status', this.connected_cb_bound);
+  }
 
   render() {
     return html`
       <div class="page ${this.mobile ? 'mobile' : ''}">
         <nav>
+          <!-- left icon (go to root) -->
           <div class="leaf-icon">
-            <div @click=${() => go("/")}>
-              <kor-icon icon="eco" color="var(--text-4)" size="m"></kor-icon>
+            <sl-icon @click=${() => go("/")} name="leaf-maple"></sl-icon>
           </div>
-          </div>
+          <!-- parent nav items -->
           <div class="nav-slot"><slot name="nav"></slot></div>
           <!-- right top menu -->
           <div class="menu">
-            <kor-icon icon="more_vert" color="var(--text-4)"></kor-icon>
-            <div class="dropdown" @click=${e => go(e.target.id)}>
-                <kor-menu-item id="log"      icon="cabin"        label="Log"></kor-menu-item>
-                <kor-menu-item id="settings" icon="settings"     label="Settings"></kor-menu-item>
-                <kor-menu-item id="dev"      icon="construction" label="Dev"></kor-menu-item>
-                <kor-menu-item id="scratch"  icon="bolt"         label="Scratch"> </kor-menu-item>
+            <sl-icon name="dots-vertical"></sl-icon>
+            <div class="dropdown">
+              <sl-menu @click=${e => go(e.target.id)}>
+                <sl-menu-item id="log">
+                  <sl-icon name="math-log"></sl-icon>Log
+                </sl-menu-item>
+                <sl-menu-item id="settings">
+                  <sl-icon name="cog"></sl-icon>Settings
+                </sl-menu-item>
+                <sl-menu-item id="dev">
+                  <sl-icon name="shovel"></sl-icon>Dev
+                </sl-menu-item>
+                <sl-menu-item id="theme">
+                  <sl-icon name="theme-light-dark"></sl-icon>Theme
+                </sl-menu-item>
+                <sl-menu-item id="scratch2">
+                  <sl-icon name="plus"></sl-icon>Scratch 2
+                </sl-menu-item>
+                <sl-menu-item id="scratch3">
+                  <sl-icon name="plus"></sl-icon>Scratch 3
+                </sl-menu-item>
+                <sl-menu-item id="scratch4">
+                  <sl-icon name="plus"></sl-icon>Scratch 4
+                </sl-menu-item>
+              </sl-menu>
             </div>
-          </div>  
+          </div>
+          <sl-icon class="connected" name=${this.connected ? 'wifi' : 'wifi-off'}></sl-icon>
         </nav>
+        <!-- page content -->
         <main>
           <slot></slot>
         </main>

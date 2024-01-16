@@ -4,7 +4,8 @@ import { consume } from '@lit/context';
 import { choose } from 'lit/directives/choose.js';
 
 import { type Config, configContext } from './app/contexts';
-import { go, location } from './app/app';
+import { go } from './app/app';
+import { shared_css } from './assets/css/shared_styles';
 
 
 @customElement('leaf-view')
@@ -15,6 +16,7 @@ export class LeafView extends LitElement {
   private config: Config;
 
   static styles = [
+    shared_css,
     css`
       * {
         text-decoration: none;
@@ -23,14 +25,20 @@ export class LeafView extends LitElement {
         display: flex;
       }
       nav > div {
-        color: green;
         margin-right: 1rem;
       }
-      nav > a:hover {
-        border-bottom: 2px solid yellow;
-      }
       .selected {
-        border-bottom: 2px solid white;
+        border-bottom: 2px solid var(--sl-color-neutral-0);
+      }
+      .spinner {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+      }
+      sl-spinner {
+        font-size: 50px; 
+        --track-width: 4px;
       }
     `
   ];
@@ -48,18 +56,31 @@ export class LeafView extends LitElement {
   }  
     
   render() {
-    const views = this.config.views;
-    const cards = views[this.view_id].cards;
+    let views, cards;
+    try {
+      views = this.config.views;
+      cards = views[this.view_id].cards;  
+    }
+    catch {
+      return html`
+        <leaf-page>
+          <nav slot="nav">Connecting</nav>
+          <div class="spinner">
+            <sl-spinner></sl-spinner>
+          </div>
+        </leaf-page>
+      `
+    }
 
     return html`
-      <leaf-page mobile theme="view-theme">
+      <leaf-page mobile>
         <nav slot="nav">
           ${views.map((view, index) =>
             html`
               <div 
                 @click=${() => go(`view/${index}`)} 
                 class="${index == this.view_id ? 'selected' : ''}">
-                <kor-icon color="white" icon="${view.icon}"></kor-icon>
+                <sl-icon name="${view.icon}"></sl-icon>
               </div>`
           )}
         </nav>

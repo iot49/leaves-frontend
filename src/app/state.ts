@@ -1,3 +1,5 @@
+import { app } from "../leaf-main"
+
 export type State = Map<string,object>;
 
 function wildcard_match(str, rule) {
@@ -52,7 +54,8 @@ export function sort_state(state: State): State {
 
 export const state_handler = {
   get(target, prop, _) {
-    const cfg = (window as any).leaf.config;
+    // const cfg = (window as any).leaf.config;
+    const cfg = app.config;
     const entity_id = target.entity_id;
     switch (prop) {
       case 'entity_id': return entity_id;

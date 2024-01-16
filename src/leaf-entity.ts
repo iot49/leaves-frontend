@@ -1,9 +1,10 @@
-import { html, css, LitElement, PropertyValueMap } from 'lit';
+import { html, css, PropertyValueMap, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import 'python-format-js';
 
 import { type State, stateContext } from './app/contexts';
+import { shared_css } from './assets/css/shared_styles';
 
 
 @customElement('leaf-entity')
@@ -23,12 +24,13 @@ export class LeafEntity extends LitElement {
 
   
     static styles = [
+      shared_css,
       css`
         :host {
           display: flex;
         }
         .icon {
-          width: 3rem;
+          font-size: 24px;
         }
         .name {
           width: 10rem;
@@ -67,7 +69,7 @@ export class LeafEntity extends LitElement {
       const entity: any = new Proxy({ spec: this.spec, state: state }, proxy_handler);
 
       return html`
-        <kor-icon icon=${entity.icon}></kor-icon>
+        <sl-icon class="icon" name=${entity.icon}></sl-icon>
         <span class="name">${entity.name}</span>
         <span class="value">${this.format(this.value, entity.format)}</span>
         <span class="unit">${entity.unit}</span>

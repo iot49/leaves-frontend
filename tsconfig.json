@@ -20,6 +20,6 @@
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true
     },
-    "include": ["src"],
+    "include": ["src", "vite-env.d.ts", "OLD/leaf-file-editor copy.ts", "OLD/leaf-router copy KEEP FOR NOW.ts", "OLD/leaf-tabbed-pane.ts", "OLD/leaf-split.ts", "OLD/leaf-popup.ts", "OLD/leaf-grid-example.ts"],
     "types": ["node"],
 }

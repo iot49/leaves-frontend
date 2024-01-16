@@ -4,6 +4,7 @@ import { consume } from '@lit/context';
 
 import { type State, stateContext } from './app/contexts';
 
+
 @customElement('leaf-entities')
 export class LeafEntities extends LitElement {
 

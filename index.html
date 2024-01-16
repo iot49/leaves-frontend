@@ -18,10 +18,10 @@
   <script>
     if (false && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/serviceworker.js")
-        .then(function(reg) {
+        .then(function (reg) {
           console.log("Service Worker:", reg.scope);
         })
-        .catch(function(err) {
+        .catch(function (err) {
           console.log("Service worker registration failed:", err);
         })
     }
