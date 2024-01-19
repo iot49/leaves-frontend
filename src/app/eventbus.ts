@@ -1,84 +1,81 @@
 import { WsBus } from './ws-bus';
 import { BleBus } from './ble-bus';
+import { html } from 'lit';
+import { app } from '..';
 
 
 export interface EventBus {
-  connected: boolean;
-  status: number;  /* WebSocket.readyState */
-  auto_connect: boolean;
-  disconnect();
+  readonly connected: boolean;
   connect_ws(url: string);
   connect_ble(app_name: string);
-  /* async */ postEvent(event: object): Promise<any>;
+  disconnect();
+  postEvent(event: object): Promise<any>;
+}
+
+export interface Bus {
+  readonly connected: boolean;
+  disconnect();
+  send(msg: string): Promise<any>;
 }
 
 
 class _EventBus implements EventBus {
 
-  private ws = new WsBus();
-  private ble = new BleBus();
-  private wdt: ReturnType<typeof setInterval>;
+  private bus: Bus;
+  private wdtId: ReturnType<typeof setInterval>;
 
-  get connected() {
-    return this.ws.connected || this.ble.connected;
-  }
-
-  get status(): number {
-    return this.ws.status;
-  }
-
-  public get auto_connect() {
-    return this.ws.auto_connect;
-  }
-
-  public set auto_connect(ac: boolean) {
-    this.ws.auto_connect = ac;
-  }
+  get connected() { return this.bus ? this.bus.connected : false }
 
   disconnect() {
-    this.ws.disconnect();
-    this.ble.disconnect();
+    if (this.bus) this.bus.disconnect();
+    this.bus = null;
   }
 
   connect_ws(url: string) {
-    this.disconnect()
-    this.ws.connect(url);
+    this.disconnect();
+    this.bus = new WsBus(url);
   }
 
   connect_ble(app_name: string) {
-    this.disconnect()
-    this.ble.connect(app_name);
+    this.disconnect();
+    this.bus = new BleBus(app_name);
   }
 
   async postEvent(event: object) {
-    // usually only one will be connected
+    if (!this.bus) return;
     const msg = JSON.stringify(event);
     let max_msg_length = 50000;
     try { max_msg_length = (window as any).leaf.config.app.max_msg_length; } catch { }
     if (msg.length > max_msg_length) {
-      console.log(`message exceeds maximum message length (${msg.length} > ${max_msg_length}), rejected`)
+      app.overlay = html`<sl-dialog label="notebook.ts" open>message exceeds maximum message length (${msg.length} > ${max_msg_length}), rejected</sl-dialog>`;
     } else {
-      if (this.ws.connected) this.ws.postEvent(msg);
-      if (this.ble.connected) this.ble.postEvent(msg);
+      this.bus.send(msg);
     }
   }
 
   constructor() {
     const PING_INTERVAL = 1000;
     const WDT_TIMEOUT = 5000;
-    window.addEventListener('event-bus-message', _ => {
+    window.addEventListener('leaf-event', _ => {
       // reset wdt to "feed" it
-      clearInterval(this.wdt);
-      this.wdt = setTimeout(this.disconnect.bind(this), WDT_TIMEOUT);
+      clearInterval(this.wdtId);
+      // start a new wdt
+      this.wdtId = setTimeout(this.disconnect.bind(this), WDT_TIMEOUT);
     });
-    window.addEventListener('event-bus-status', _ => {
-      if (this.ws.connected) {
-        setInterval(() => this.postEvent({ type: 'ping' }), PING_INTERVAL);
+    window.addEventListener('leaf-connection', _ => {
+      if (this.connected) {
+        const pingId = setInterval(() => {
+          if (this.connected) {
+            this.postEvent({ type: 'ping' })
+          } else {
+            clearInterval(pingId);
+          }
+        }, PING_INTERVAL);
         // detect disconnect if no communication (e.g. pong) from host
-        this.wdt = setTimeout(this.disconnect.bind(this), WDT_TIMEOUT);
+        this.wdtId = setTimeout(this.disconnect.bind(this), WDT_TIMEOUT);
       } else {
         // clear the watchdog
-        clearInterval(this.wdt);
+        clearInterval(this.wdtId);
       }
     });
   }

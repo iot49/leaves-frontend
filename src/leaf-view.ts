@@ -4,7 +4,7 @@ import { consume } from '@lit/context';
 import { choose } from 'lit/directives/choose.js';
 
 import { type Config, configContext } from './app/contexts';
-import { go } from './app/app';
+import { app } from '.';
 import { shared_css } from './assets/css/shared_styles';
 
 
@@ -48,7 +48,7 @@ export class LeafView extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    window.addEventListener('go', (ev: CustomEvent) => {
+    window.addEventListener('leaf-go', (ev: CustomEvent) => {
       const location = ev.detail.location;
       const n = Number(location.substring(location.lastIndexOf('/') + 1));
       this.view_id = n ? n : 0;
@@ -66,7 +66,7 @@ export class LeafView extends LitElement {
         <leaf-page>
           <nav slot="nav">Connecting</nav>
           <div class="spinner">
-            <sl-spinner></sl-spinner>
+            <sl-spinner></sl-spinner> Loading configuration ...
           </div>
         </leaf-page>
       `
@@ -78,7 +78,7 @@ export class LeafView extends LitElement {
           ${views.map((view, index) =>
             html`
               <div 
-                @click=${() => go(`view/${index}`)} 
+                @click=${() => app.go(`view/${index}`)} 
                 class="${index == this.view_id ? 'selected' : ''}">
                 <sl-icon name="${view.icon}"></sl-icon>
               </div>`

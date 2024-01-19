@@ -1,11 +1,11 @@
-import { css, html, LitElement } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { css, html, LitElement, TemplateResult } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
 import { ContextProvider } from '@lit/context';
 import { set, getMany } from 'idb-keyval';
 
 import { type State, stateContext, configContext, logContext, settingsContext, Config, Log, Settings, Connected, connectedContext } from './app/contexts';
 import { state_handler, sort_state } from './app/state';
-import { eventbus } from './app/app';
+import { eventbus } from './app/eventbus';
 import { shared_css } from './assets/css/shared_styles';
 
 
@@ -15,6 +15,11 @@ export interface App {
   config: Config;
   log: Log;
   settings: Settings;
+
+  // see leaf-settings for usage
+  overlay: TemplateResult<1>;
+
+  go(location: string);
 }
 
 // app-wide access to current state, config, etc.
@@ -37,6 +42,12 @@ export class LeafMain extends LitElement implements App {
         display: flex;
         flex-direction: column;
       }
+      #overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        z-index: 1000;
+      }
     `
   ];
 
@@ -44,6 +55,9 @@ export class LeafMain extends LitElement implements App {
   public state: State = new Map<string, object>();
   public config: Config = {};
   public log = [];
+
+  @property({ attribute: false })
+  overlay = html``;
 
   private _connectedProvider = new ContextProvider(this, { context: connectedContext, initialValue: this.connected });
   private _stateProvider = new ContextProvider(this, { context: stateContext, initialValue: this.state });
@@ -59,15 +73,21 @@ export class LeafMain extends LitElement implements App {
     // cfg.views[0].cards[0].entities[2].format = '.1f';
   }
 
-
+  public go(location: string) {
+    window.dispatchEvent(new CustomEvent('leaf-go', { 
+      bubbles: true, composed: true, 
+      detail: { location: location } 
+    }))
+  }
   private cache = {
-    app_name: 'leaf',
+    app_name: '*',  // ble-bus: set to config/app/name to offer connecting only to one backend
     // 10.0.0.225
     backend_ip: "`${this.app_name}.local`",
     backend_ws: "`ws://${this.backend_ip}/ws`",
     auto_connect: false,
     dark_theme: false,
     firmware_url: "/firmware/index.json",
+    root_dir: undefined,
   }
 
   public settings = new Proxy({cache: this.cache, main: this}, {
@@ -104,8 +124,8 @@ export class LeafMain extends LitElement implements App {
         if (this.settings.auto_connect) eventbus.connect_ws(this.settings.backend_ws);
     })
     
-    window.addEventListener('event-bus-status', () => {
-      this.connected = eventbus.connected;
+    window.addEventListener('leaf-connection', (event: CustomEvent) => {
+      this.connected = event.detail;
       this._connectedProvider.setValue(this.connected, true);
       if (eventbus.connected) {
         eventbus.postEvent({ type: 'get_config' });
@@ -114,7 +134,7 @@ export class LeafMain extends LitElement implements App {
       }
     });
 
-    window.addEventListener('event-bus-message',
+    window.addEventListener('leaf-event',
       (_event: any) => {
         const event = _event.detail;
         switch (event.type) {
@@ -165,6 +185,7 @@ export class LeafMain extends LitElement implements App {
         { route: "scratch2", component: "leaf-scratch2" },
         { route: "scratch3", component: "leaf-scratch3" },
       ]}></leaf-router>
+      <div id="overlay">${this.overlay}</div>
     `
   }
 

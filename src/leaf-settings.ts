@@ -3,7 +3,8 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { shared_css } from './assets/css/shared_styles';
 import { consume } from '@lit/context';
 import { settingsContext, Settings, Connected, connectedContext, Config, configContext } from './app/contexts';
-import { eventbus } from './app/app';
+import { eventbus } from './app/eventbus';
+import { app } from '.';
 
 
 @customElement('leaf-settings')
@@ -54,25 +55,12 @@ export class LeafSettings extends LitElement {
       sl-button > sl-icon {
         position: relative;
         font-size: 24px;
+        /* BUG: icon not centered in button */
         left: 9px;
         top: 3px;
       }
       sl-input {
         width: 100%;
-      }
-      #ota {
-        height: 100%;
-        width: 80%;     
-        transform:translate(0%, -50%);  
-        backdrop-filter: blur;
-      }
-      sl-alert::part(base) {
-        color: var(--sl-color-danger-600);
-        background-color:  var(--sl-color-neutral-50);
-        border: 3px solid var(--sl-color-danger-600);
-      }
-      sl-progress-bar {
-        --indicator-color: var(--sl-color-danger-600);
       }
     `
   ];
@@ -88,12 +76,12 @@ export class LeafSettings extends LitElement {
   @consume({ context: settingsContext, subscribe: true })
   @property({ attribute: false })
   private settings: Settings;
-
-  @query('#groups')
-  private groups;
   
-  @query('#ota-alert')
-  private ota_alert;
+  @query('#ota-dialog')
+  private ota_dialog;
+
+  @query('#url-dialog')
+  private url_dialog;
 
   @state()
   private available_firmwares = []
@@ -118,11 +106,11 @@ export class LeafSettings extends LitElement {
       const resp = await fetch(this.settings.firmware_url);
       this.available_firmwares = await resp.json();
     })();
-    window.addEventListener('event-bus-message', this.ota_status_bound);
+    window.addEventListener('leaf-event', this.ota_status_bound);
   }
 
   disconnectedCallback(): void {
-    window.removeEventListener('event-bus-message', this.ota_status_bound);
+    window.removeEventListener('leaf-event', this.ota_status_bound);
   }
 
   rowTemplate(icon: string, desc, control) {
@@ -148,17 +136,18 @@ export class LeafSettings extends LitElement {
             <div style="visibility: hidden">${this.themeTemplate()}</div>
           </div>
 
-          <div id="ota">
-            <sl-alert id="ota-alert" variant="danger">
-              <sl-icon slot="icon" name="upload"></sl-icon>
-              Flashing new firmware ...
-              <sl-progress-bar id="ota-progress" value=${this.ota_progress}>
-                ${this.ota_progress + (this.ota_progress instanceof Number ? '%' : '')}
-              </sl-progress-bar>
-            </sl-alert>
-          </div>
         </main>
       </leaf-page>
+
+      <sl-dialog id="ota-dialog" label="Flashing new firmware ...">
+        <sl-progress-bar id="ota-progress" value=${this.ota_progress}>
+          ${this.ota_progress + (this.ota_progress instanceof Number ? '%' : '')}
+        </sl-progress-bar>
+      </sl-dialog>
+
+      <sl-dialog id="url-dialog" label="Cannot determine server URL">
+        Load the webpage from the actual server url, not localhost!
+      </sl-dialog>
     `
   }
 
@@ -247,33 +236,33 @@ export class LeafSettings extends LitElement {
             </sl-select>`,
             ''
         )}
-
         ${this.rowTemplate(
           'upload-box-outline',
           new_version_available ? 'New Version Available' : 'Up-to-date',
           html`<sl-button size="small" 
-                  variant=${new_version_available ? 'danger' : 'default'}
-                  @click=${() => {
-                    const version = this.renderRoot.querySelector('sl-select').value;
-                    const fw = this.available_firmwares.find((el) => el.version == version);
-                    const url = `${window.origin}/firmware/${fw.file}`;
-                    if (url.includes('localhost')) {
-                      window.alert(`***** start client from ip, not localhost for OTA to work ${window.origin}`);
-                      return
-                    }
-                    this.groups.style.filter = 'blur(1px)';
-                    this.ota_alert.show();
-                    this.firmware_size = fw.size;
-                    eventbus.postEvent({
-                      type: 'ota_flash',
-                      url:  url,
-                      sha:  fw.sha
-                    });
-              
-                  }}>
-                <sl-icon name="upload"></sl-icon></sl-button>
-          `
-        )}
+            variant=${new_version_available ? 'danger' : 'default'}
+            @click=${() => {
+              const version = this.renderRoot.querySelector('sl-select').value;
+              const fw = this.available_firmwares.find((el) => el.version == version);
+              if (!fw) return;
+              const url = `${window.origin}/firmware/${fw.file}`;
+              if (url.includes('localhost')) {
+                app.overlay = this.url_dialog;
+                this.url_dialog.show();
+                return
+              }
+              app.overlay = this.ota_dialog;
+              this.ota_dialog.show();
+              this.firmware_size = fw.size;
+              eventbus.postEvent({
+                type: 'ota_flash',
+                url:  url,
+                sha:  fw.sha
+              });
+        
+            }}>
+          <sl-icon name="upload"></sl-icon></sl-button>
+        `)}
       </div>`
   }
 

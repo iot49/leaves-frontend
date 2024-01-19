@@ -9,11 +9,11 @@ export class LeafRouter extends LitElement {
   private routes = [];
 
   @state()
-  private route = "dev"; //"view";
+  private route = "settings"; //"view";
 
   constructor() {
     super();
-    window.addEventListener('go', (event: CustomEvent)  => this.go(event.detail.location));
+    window.addEventListener('leaf-go', (event: CustomEvent)  => this.go(event.detail.location));
   }
 
   protected go(location="/") {

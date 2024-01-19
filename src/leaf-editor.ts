@@ -14,13 +14,15 @@ import { javascript } from '@codemirror/lang-javascript';
 import { markdown } from '@codemirror/lang-markdown';
 import { json } from '@codemirror/lang-json';
 
+import { CodeEditor } from './app/notebook';
+
 
 // yaml: https://github.com/codemirror/dev/issues/306
 // sizing: https://discuss.codemirror.net/t/fill-a-div-with-the-editor/5248/5
 
 
 @customElement('leaf-editor')
-export class LeafEditor extends LitElement {
+export class LeafEditor extends LitElement implements CodeEditor {
 
   static styles = [ 
     shared_css,
@@ -36,65 +38,58 @@ export class LeafEditor extends LitElement {
   `];
 
   // @property({ reflect: true })
-  language = "py";
+  languageProperty = "python";
 
   private _state: EditorState;
   private _view: EditorView;
   private _language_comp = new Compartment();
-  public changed = false;
+  public codeModified = false;
 
-  constructor(initial_doc = "", language = "py") {
+  constructor() {
     super();
-    this.language = language;
+    this.createState();
+  }
+
+  private createState(doc = "") {
     let updateExtension = EditorView.updateListener.of(update => {
-      if (update.docChanged) this.changed = true;
+      if (update.docChanged) this.codeModified = true;
     });
     this._state = EditorState.create({
-      doc: initial_doc,
+      doc: doc,
       extensions: [
         basicSetup, 
         updateExtension,
         // keymap.of([ { key: 'Tab', run: acceptCompletion } ]), 
         keymap.of([ indentWithTab ]),
-        this._language_comp.of(this.languageFor(language)),
+        this._language_comp.of([ python() ]),
         indentUnit.of("    "), 
       ],
     });
   }
 
-  public switchLanguage(language: string) {
-    if (this.language == language) return;
-    this._view.dispatch({
-      effects: this._language_comp.reconfigure(this.languageFor(language))
-    });
-    this.language = language;
+  get code() { return this._view ? this._view.state.doc.toString() : this._state.doc.toString(); }
+
+  set code(code) { 
+    if (this._view) {
+      this._view.dispatch({changes: {
+        from: 0,
+        to: this._view.state.doc.length,
+        insert: code
+      }});    
+    } else {
+      // view not yet created, I don't know how to modify the doc in the state
+      // so I recreate the entire state
+      this.createState(code);
+    }
+    this.codeModified = false;
   }
 
-  public async save(handle: FileSystemHandle) {
-    if (!this.changed) return;
-    this.changed = false;
-    const writable = await (handle as any).createWritable();
-    await writable.write(this.getDoc());
-    await writable.close();
-  }
+  public get language() { return this.languageProperty; }
 
-  public getDoc() {
-    return this._view ? this._view.state.doc.toString() : this._state.doc.toString();
-  }
-
-  public setDoc(doc: string) {
-    this._view.dispatch({changes: {
-      from: 0,
-      to: this._view.state.doc.length,
-      insert: doc
-    }});  
-  }
-
-  public setFocus() {
-    if (this._view) this._view.focus();
-  }
-
-  private languageFor(lang: string) {
+  public set language(lang: string) {
+    if (this.languageProperty == lang) return;
+    if (!this._view) return;
+    this.languageProperty = lang;
     const languages = {
       python: python,
       py: python,
@@ -106,7 +101,21 @@ export class LeafEditor extends LitElement {
       md: markdown,
       json: json,
     }
-    return lang in languages ? languages[lang]() : [];    
+    this._view.dispatch({
+      effects: this._language_comp.reconfigure(lang in languages ? languages[lang]() : [])
+    });
+  }
+
+  public async save(handle: FileSystemHandle) {
+    if (!this.codeModified) return;
+    this.codeModified = false;
+    const writable = await (handle as any).createWritable();
+    await writable.write(this.code);
+    await writable.close();
+  }
+
+  public setFocus() {
+    if (this._view) this._view.focus();
   }
 
   protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
@@ -121,3 +130,8 @@ export class LeafEditor extends LitElement {
   }
 
 }
+
+
+export function editorFactory(): CodeEditor {
+  return new LeafEditor();
+};

@@ -19,7 +19,6 @@ export * from "./leaf-theme";
 export * from "./leaf-page";
 export * from "./leaf-editor";
 export * from "./leaf-nb-editor";
-export * from "./leaf-nb-cell";
 export * from "./leaf-file-viewer";
 
 // Entities

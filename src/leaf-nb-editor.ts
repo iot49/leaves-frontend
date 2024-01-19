@@ -1,11 +1,14 @@
 import { html, css, LitElement } from 'lit';
-import { customElement, state, query } from 'lit/decorators.js';
-import { marked } from 'marked';
+import { customElement, state } from 'lit/decorators.js';
 
-import { eventbus } from './app/app';
-import { LeafEditor } from '.';
-import { exec_cell, move_up, move_down, insert_above, insert_below, delete_cell } from './assets/nb-icons';
 import { shared_css } from './assets/css/shared_styles';
+
+import { Cell, CodeEditor, NoteBook } from './app/notebook';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { LeafEditor } from '.';
+import { markdown_css } from './assets/css/markdown';
+import { output_css } from './assets/css/output';
+import { delete_cell, exec_cell, insert_above, insert_below, move_down, move_up } from './assets/nb-icons';
 
 
 // python asyc exec: https://bugs.python.org/issue34616
@@ -18,7 +21,7 @@ the CO_COROUTINE flag may then be returned. (Contributed by Matthias Bussonnier 
 */
 
 @customElement('leaf-nb-editor')
-export class LeafNbEditor extends LitElement {
+export class LeafNbEditor extends LitElement implements CodeEditor {
 
   static styles = [
     shared_css,
@@ -29,8 +32,68 @@ export class LeafNbEditor extends LitElement {
       main {
         margin: 10px;
       }
+
       .cell {
-        margin-bottom: 15px;
+        margin-bottom: 35px;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      .code {
+        display: flex;
+        flex: auto;
+        position: relative;
+        margin-bottom: 12px;
+      }
+
+      .out {
+        display: flex;
+        flex: auto;
+        min-height: 12px;
+      }
+
+      .vbar {
+        border: 2px solid var(--sl-color-emerald-500);
+        background-color: var(--sl-color-emerald-500);
+        width: 7px;
+        min-height: 12px;
+        margin-right: 20px;
+        border-radius: 3px;
+        border-width: 2px;
+        box-sizing: content-box;
+      }
+      .code .vbar {
+        border-color: var(--sl-color-primary-500);
+        background-color: var(--sl-color-primary-500);
+      }
+      .code .outline, .out .outline {
+        background-color: var(--sl-color-neutral-0);
+      }
+
+      .editor {
+        width: 100%;
+        overflow-x: auto;
+      }
+      .editor:focus-within {
+        border: 1px solid var(--sl-color-primary-500);
+      }
+
+      .result {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+      }
+
+      .tools {
+        position: absolute;
+        top: 2px;
+        right: 4px;
+        visibility: hidden;
+      }
+      .cell:hover .tools {
+        visibility: visible;
       }
       .tool {
         margin-left: 8px;
@@ -46,232 +109,100 @@ export class LeafNbEditor extends LitElement {
         color: var(--sl-color-neutral-200);
       }
     `,
+    output_css,
+    markdown_css,
   ];
 
-  private _file_name: string;
-
-
-
   @state()
-  private cells: { 
-    id: string, 
-    code: string, 
-    output: string, 
-    hide_editor: boolean, 
-    hide_result: boolean, 
-    editor?: LeafEditor,
-   }[] = [];
+  public notebook = new NoteBook(() => new LeafEditor());
 
-  @query('.context_menu')
-  context_menu;
+  get code() { return this.notebook.json; }
+  set code(json: string) { this.notebook.json = json; }
 
-  private static next_cell_id = 0;
-  private active_cell = -1;
+  get language() { return '' };
+  set language(_: string) {};
 
-  constructor(file_name: string, initial_doc = "") {
-    super();
-    this._file_name = file_name;
-    this.load_nb(initial_doc);
-  }
+  get codeModified(): boolean { return this.notebook.codeModified; }
+  set codeModified(value: false) { this.notebook.codeModified = value; }
 
   public async save(handle: FileSystemHandle) {
-    let changed = false;
-    for (const cell of this.cells) {
-      changed ||= cell.editor.changed;
-      cell.editor.changed = false;
-    }
-    if (!changed) return;
+    const nb = this.notebook;
+    if (!nb.codeModified) return;
     const writable = await (handle as any).createWritable();
-    await writable.write(this.getDoc());
+    await writable.write(this.notebook.json);
     await writable.close();
-  }
-
-  public getDoc() {
-    const nb = {
-      description: 'leaf notebook',
-      version: 1,
-      cells: this.cells.map(function (cell) {
-        // update code and return all keys except 'id' and 'editor'
-        cell.code = cell.editor.getDoc();
-        let { id, editor, ...rest } = cell;
-        return rest;
-      })
-    }
-    return JSON.stringify(nb, null, 2);
-  }
-
-  private load_nb(doc: string) {
-    if (doc.length === 0) {
-      this.add_cell();
-    } else {
-      const nb = JSON.parse(doc);
-      if (nb.version !== 1) console.log(`${this._file_name}: wrong version`, doc);
-      for (const cell of nb.cells) this.add_cell(-1, cell);
-    }
-  }
-
-  private add_cell(index = -1, cell = {} as any) {
-    LeafNbEditor.next_cell_id += 1;
-    cell.id = 'c' + LeafNbEditor.next_cell_id;
-    cell.code! != "";
-    cell.output! != "";
-    cell.editor = new LeafEditor(cell.code, 'py');
-    cell.hide_editor ||= false;
-    cell.hide_result ||= false;
-    if (index < 0) {
-      // append new cell to cells array
-      this.cells.push(cell);
-      index = this.cells.length - 1;
-    } else {
-      // insert after index
-      this.cells.splice(index, 0, cell);
-    }
-    // schedule an update
-    this.cells = [...this.cells];
-
-    // intercept Shift-Enter
-    cell.editor.addEventListener('keydown', (e) => {
-      switch (e.key) {
-        case 'Enter':
-          if (e.shiftKey) {
-            this.exec_cell(index);
-            return e.preventDefault();
-          };
-          break
-      }
-    });
-
+    this.codeModified = false;
   }
 
   // js insanity
+  private message(event: CustomEvent) { this.notebook.processPrintEvent(event.detail); }
   private messageCb = this.message.bind(this);
 
   connectedCallback() {
     super.connectedCallback();
-    window.addEventListener('event-bus-message', this.messageCb);
+    this.addEventListener('leaf-cell-changed', () => this.requestUpdate());
+    window.addEventListener('leaf-event', this.messageCb);
   }
 
   disconnectedCallback(): void {
-    window.removeEventListener('event-bus-message', this.messageCb);
+    window.removeEventListener('leaf-connection', this.messageCb);
   }
 
-  message(ev: CustomEvent) {
-    if (this.active_cell < 0) return;
-    const event = ev.detail;
-    let msg;
-    switch (event.type) {
-      case 'print':
-        msg = `<span class="output">${event.data}</span>`;
-        break;
-      case 'log':
-        if (event.name === "features.dev" || event.name === "user_features.dev") {
-          msg = `<div class="${event.levelname}">${event.message}</div>`;
-        }
-        break;
-    }
-    if (msg) {
-      this.cells[this.active_cell].output += msg;
-      // schedule an update
-      this.cells = [...this.cells];
-    }
+  toolsTemplate(cellIndex: number) {
+    const cells = this.notebook.cells;
+    return html`
+      <span class="tool" @click=${() => cells[cellIndex].exec()}>${exec_cell}</span>              
+      <span class="tool ${cellIndex > 0 ? '' : 'tool-disabled'}"
+          @click=${() => {
+            if (cellIndex > 0) [cells[cellIndex - 1], cells[cellIndex]] = [cells[cellIndex], cells[cellIndex - 1]];
+            this.requestUpdate();
+          }}>${move_up}</span>              
+      <span class="tool ${cellIndex < cells.length - 1 ? '' : 'tool-disabled'}"
+          @click=${() => {
+            if (cellIndex < cells.length - 1) [cells[cellIndex + 1], cells[cellIndex]] = [cells[cellIndex], cells[cellIndex + 1]];
+            this.requestUpdate();
+          }}>${move_down}</span>              
+      <span class="tool" @click=${() => {
+        this.notebook.insertCell(cellIndex);
+        this.requestUpdate();
+      }}>${insert_above}</span>              
+      <span class="tool" @click=${() => {
+        this.notebook.insertCell(cellIndex+1);
+        this.requestUpdate();
+      }}>${insert_below}</span>              
+      <span class="tool" @click=${() => {
+        cells.splice(cellIndex, 1);
+        this.requestUpdate();
+      }}>${delete_cell}</span>              
+    `;
   }
 
-  exec_cell(index: number) {
-    this.active_cell = index;
-    const cell = this.cells[index];
-    const code = cell.editor.getDoc();
-    const cell_id = cell.id;
-    const language = (code.match(/^%%([\w\d]*)/) || [code, 'micropython'])[1];
-    cell.output = "";
-    cell.editor.switchLanguage(language);
-    switch (language) {
-      case 'micropython':
-      case 'mp':
-        eventbus.postEvent({
-          type: 'exec',
-          code: code.startsWith('%%') ? '# ' + code : code,
-          id: cell_id
-        });
-        break;
-      case 'javascript':
-      case 'js':
-        // redirect console output
-        const cons = console as any;
-        cons.default_log = console.log;
-        console.log = function (...values) {
-          window.dispatchEvent(new CustomEvent('event-bus-message', {
-            bubbles: true, composed: true,
-            detail: { type: 'print', data: values.join(' ') }
-          }));
-        }
-        // eval
-        try {
-          const result = eval?.(code.startsWith('%%') ? '// ' + code : code);
-          if (result) cell.output += `<span class="output">${result}</span>`;  
-        }
-        // reset console to default behavior
-        finally {
-          console.log = (console as any).default_log;
-        }
-        break;
-      case 'markdown':
-      case 'md':
-        cell.output = marked.parse(code.substring(code.indexOf("\n") + 1)) as string;
-        cell.hide_editor = true;
-        break;
-      default:
-        cell.output = `<div class="exception">***** Unknown language: %%${language}</div>`;
-    }
-    this.cells = [...this.cells];
-    // add empty cell if this one is the last one of the notebook
-    if (index + 1 === this.cells.length) this.add_cell();
-    this.cells[this.active_cell+1].editor.setFocus();
+  cellTemplate(cell: Cell, index: number) {
+    return html`
+      <div class="cell ${cell.id}}">
+        <div class="code">
+          <div class="vbar ${cell.hide_editor ? 'outline' : ''}"
+            @click=${() => { cell.hide_editor = !cell.hide_editor;  this.requestUpdate(); }}></div>
+          <div class="editor ${cell.hide_editor ? 'hide' : ''}">${cell.editor}</div>
+          <div class="tools ${cell.hide_editor ? 'hide' : ''}">${this.toolsTemplate(index)}</div>
+        </div>
+        <div class="out">
+          <div class="vbar ${cell.hide_output ? 'outline' : ''}"
+              @click=${() => { cell.hide_output = !cell.hide_output;  this.requestUpdate();}}></div>
+          <div class="result ${cell.hide_output ? 'hide' : ''}">${unsafeHTML(cell.output)}</div>
+        </div>
+      </div>
+    `;
   }
 
   render() {
-    const cells = this.cells;
     return html`
       <main>
-        ${cells.map((cell, i) =>
-        html`
-            <div class="cell">
-              <leaf-nb-cell id=${cell.id} .cell=${cell} .output=${cell.output}>
-                <div id="tools">
-                  <span class="tool" 
-                      @click=${() => this.exec_cell(i)}>
-                      ${exec_cell}
-                  </span>              
-                  <span class="tool ${i > 0 ? '' : 'tool-disabled'}"
-                      @click=${() => {
-                        if (i > 0) {
-                          [cells[i - 1], cells[i]] = [cells[i], cells[i - 1]]
-                        }
-                        this.cells = [...this.cells];
-                      }}>
-                      ${move_up}
-                  </span>              
-                  <span class="tool ${i < cells.length - 1 ? '' : 'tool-disabled'}"
-                      @click=${() => {
-                        if (i < cells.length - 1) {
-                          [cells[i + 1], cells[i]] = [cells[i], cells[i + 1]]
-                        }
-                        this.cells = [...this.cells];
-                      }}>
-                      ${move_down}
-                  </span>              
-                  <span class="tool" @click=${() => this.add_cell(i)}>${insert_above}</span>              
-                  <span class="tool" @click=${() => this.add_cell(i + 1)}>${insert_below}</span>              
-                  <span class="tool" @click=${() => {
-                    this.cells.splice(i, 1);
-                    this.cells = [...this.cells];
-                  }}>${delete_cell}</span>              
-                </div>
-              </leaf-nb-cell>
-            </div>`
-      )}
+        ${this.notebook.cells.map((cell, index) => 
+          this.cellTemplate(cell, index))}
       </main>
-    `
-  }
+    `;
+  } 
 
 }
 

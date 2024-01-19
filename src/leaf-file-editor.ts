@@ -24,16 +24,10 @@ export class LeafFileEditor extends LitElement {
       section {
         overflow: auto;
       }
-      #file-viewer {
+      leaf-file-viewer {
         display: flex;
         flex-direction: column;
         overflow: auto;
-      }
-      header {
-        display: flex;
-        justify-content: center;
-        height: var(--tab-bar-height);
-        background-color: var(--sl-color-neutral-300);
       }
 
       /* editor ***************************************************************/
@@ -73,6 +67,20 @@ export class LeafFileEditor extends LitElement {
   @state()
   private active_tab = -1;
 
+  private saveKeyListenter(event: KeyboardEvent) {
+    switch (event.key) {
+      case 's':
+        if (event.metaKey || event.ctrlKey) {
+          if (this.active_tab >= 0 && this.active_tab < this.tabs.length) {
+            const tab = this.tabs[this.active_tab];
+            tab.editor.save(tab.handle);
+            return event.preventDefault();
+          }
+        }
+      }
+  }
+  private saveKeyListenerBound = this.saveKeyListenter.bind(this);
+
   async connectedCallback() {
     super.connectedCallback();
 
@@ -85,18 +93,7 @@ export class LeafFileEditor extends LitElement {
     });
 
     // cmd-S save command
-    this.addEventListener('keydown', (event) => {
-      switch (event.key) {
-        case 's':
-          if (event.metaKey || event.ctrlKey) {
-            if (this.active_tab >= 0 && this.active_tab < this.tabs.length) {
-              const tab = this.tabs[this.active_tab];
-              tab.editor.save(tab.handle);
-              return event.preventDefault();
-            }
-          }
-      }
-    });
+    window.addEventListener('keydown', this.saveKeyListenerBound);
     // auto-save
     const interval = 5_000;
     setInterval(() => {
@@ -104,7 +101,7 @@ export class LeafFileEditor extends LitElement {
     }, interval);
 
     // open file
-    this.addEventListener('open-file', async (e: CustomEvent) => {
+    this.addEventListener('leaf-open', async (e: CustomEvent) => {
       const handle = e.detail as FileSystemFileHandle;
       // already open?
       for (const [ index, t ] of this.tabs.entries()) { 
@@ -116,10 +113,17 @@ export class LeafFileEditor extends LitElement {
       const file = await handle.getFile();
       const content = await file.text();
       const ext = handle.name.split('.').pop();
-      const editor = ext === 'nb' ? new LeafNbEditor(file.name, content) as any : new LeafEditor(content, ext);
+      const editor = ext === 'nb' ? new LeafNbEditor() as any : new LeafEditor();
+      editor.code = content;
+      editor.language = ext;
       this.tabs = [...this.tabs, { handle: handle, editor: editor }];
       this.active_tab = this.tabs.length - 1;
     });
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.removeEventListener('keydown', this.saveKeyListenerBound);
   }
 
   render() {
@@ -128,14 +132,7 @@ export class LeafFileEditor extends LitElement {
         <nav slot="nav">Develop</nav>
         <main>
           <sl-split-panel position-in-pixels="250">
-
-            <div id="file-viewer" slot="start">
-              <header>Header</header>
-              <section>
-                <leaf-file-viewer></leaf-file-viewer>
-              </section>         
-            </div>
-
+            <leaf-file-viewer slot="start"></leaf-file-viewer>
             <div id="tabs" slot="end">
               <sl-tab-group>
                 ${this.tabs.map((tab, i) =>
@@ -153,7 +150,6 @@ export class LeafFileEditor extends LitElement {
                 )}
               </sl-tab-group>
             </div>
-
           </sl-split-panel>
         </main>
       </leaf-page>

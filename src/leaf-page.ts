@@ -1,7 +1,8 @@
 import { html, css, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
-import { go, eventbus } from './app/app';
+import { app } from '.';
+import { eventbus } from './app/eventbus';
 import { shared_css } from './assets/css/shared_styles';
 
 @customElement('leaf-page')
@@ -34,7 +35,7 @@ export class LeafPage extends LitElement {
         padding: 0 0.8rem;
         background-color: var(--sl-color-primary-500);
         color: white;
-        font-weight: bold;
+        font-weight: 500;
         font-size: 150%;
       }
 
@@ -126,12 +127,12 @@ export class LeafPage extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    window.addEventListener('event-bus-status', this.connected_cb_bound);
+    window.addEventListener('leaf-connection', this.connected_cb_bound);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('event-bus-status', this.connected_cb_bound);
+    window.removeEventListener('leaf-connection', this.connected_cb_bound);
   }
 
   render() {
@@ -140,7 +141,7 @@ export class LeafPage extends LitElement {
         <nav>
           <!-- left icon (go to root) -->
           <div class="leaf-icon">
-            <sl-icon @click=${() => go("/")} name="leaf-maple"></sl-icon>
+            <sl-icon @click=${() => app.go("/")} name="leaf-maple"></sl-icon>
           </div>
           <!-- parent nav items -->
           <div class="nav-slot"><slot name="nav"></slot></div>
@@ -148,7 +149,7 @@ export class LeafPage extends LitElement {
           <div class="menu">
             <sl-icon name="dots-vertical"></sl-icon>
             <div class="dropdown">
-              <sl-menu @click=${e => go(e.target.id)}>
+              <sl-menu @click=${e => app.go(e.target.id)}>
                 <sl-menu-item id="log">
                   <sl-icon name="math-log"></sl-icon>Log
                 </sl-menu-item>
@@ -166,9 +167,6 @@ export class LeafPage extends LitElement {
                 </sl-menu-item>
                 <sl-menu-item id="scratch3">
                   <sl-icon name="plus"></sl-icon>Scratch 3
-                </sl-menu-item>
-                <sl-menu-item id="scratch4">
-                  <sl-icon name="plus"></sl-icon>Scratch 4
                 </sl-menu-item>
               </sl-menu>
             </div>

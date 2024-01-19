@@ -4,90 +4,10 @@ import { css } from 'lit';
 
 export const markdown_css = css`
 
-@media print {
-  *,
-  *:before,
-  *:after {
-    background: transparent !important;
-    color: #000 !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-
-  a,
-  a:visited {
-    text-decoration: underline;
-  }
-
-  a[href]:after {
-    content: " (" attr(href) ")";
-  }
-
-  abbr[title]:after {
-    content: " (" attr(title) ")";
-  }
-
-  a[href^="#"]:after,
-  a[href^="javascript:"]:after {
-    content: "";
-  }
-
-  pre,
-  blockquote {
-    border: 1px solid #999;
-    page-break-inside: avoid;
-  }
-
-  thead {
-    display: table-header-group;
-  }
-
-  tr,
-  img {
-    page-break-inside: avoid;
-  }
-
-  img {
-    max-width: 100% !important;
-  }
-
-  p,
-  h2,
-  h3 {
-    orphans: 3;
-    widows: 3;
-  }
-
-  h2,
-  h3 {
-    page-break-after: avoid;
-  }
-}
-
-html {
-  font-size: 12px;
-}
-
-@media screen and (min-width: 32rem) and (max-width: 48rem) {
-  html {
-    font-size: 15px;
-  }
-}
-
-@media screen and (min-width: 48rem) {
-  html {
-    font-size: 16px;
-  }
-}
-
-body {
-  line-height: 1.85;
-}
-
 p,
 .air-p {
-  font-size: 1rem;
-  margin-bottom: 1.3rem;
+  font-size: 0.9rem;
+  margin-bottom: 1.2rem;
 }
 
 h1,
@@ -98,40 +18,40 @@ h3,
 .air-h3,
 h4,
 .air-h4 {
-  margin: 1.414rem 0 .5rem;
+  margin: 1.1rem 0 .5rem;
   font-weight: inherit;
-  line-height: 1.42;
+  line-height: 1.2;
 }
 
 h1,
 .air-h1 {
   margin-top: 0;
-  font-size: 3.998rem;
+  font-size: 2rem;
 }
 
 h2,
 .air-h2 {
-  font-size: 2.827rem;
+  font-size: 1.72rem;
 }
 
 h3,
 .air-h3 {
-  font-size: 1.999rem;
+  font-size: 1.48rem;
 }
 
 h4,
 .air-h4 {
-  font-size: 1.414rem;
+  font-size: 1.27rem;
 }
 
 h5,
 .air-h5 {
-  font-size: 1.121rem;
+  font-size: 1.09rem;
 }
 
 h6,
 .air-h6 {
-  font-size: .88rem;
+  font-size: 0.94rem;
 }
 
 small,
@@ -151,15 +71,13 @@ textarea {
   max-width: 100%;
 }
 
-@import url(http://fonts.googleapis.com/css?family=Open+Sans:300italic,300);
-
-body {
-  color: #444;
-  font-family: 'Open Sans', Helvetica, sans-serif;
+#markdown {
+  font-family: var(--sl-font-sans);
   font-weight: 300;
+  font-size: 12px;
+  line-height: 1.5;
   margin: 6rem auto 1rem;
   max-width: 48rem;
-  text-align: center;
 }
 
 img {
@@ -200,7 +118,4 @@ li {
   text-align: left;
 }
 
-p {
-  color: #777;
-}
 `;

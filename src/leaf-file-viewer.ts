@@ -2,21 +2,88 @@ import { html, css, TemplateResult, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { until } from 'lit/directives/until.js';
 import { shared_css } from './assets/css/shared_styles';
+import { consume } from '@lit/context';
+import { settingsContext, Settings } from './app/contexts';
 
 @customElement('leaf-file-viewer')
 export class LeafFileViewer extends LitElement {
 
+  static styles = [
+    shared_css,
+    css`
+      header {
+        display: flex;       
+        height: var(--tab-bar-height);
+        background-color: var(--sl-color-neutral-300);
+      }
+    `];
+
+  @consume({ context: settingsContext, subscribe: true })
+  @property({ attribute: false })
+  private settings: Settings;
+
   @state()
   private rootDir: FileSystemDirectoryHandle;
 
+  @state()
+  private requestPermission = false;
+
   async connectedCallback() {
     super.connectedCallback();
-    this.rootDir = await navigator.storage.getDirectory(); 
+
+    // This may help (testing: throws DOMException)
+    // https://developer.chrome.com/blog/persistent-permissions-for-the-file-system-access-api
+    
+    // attempt to get access permission for a directory retrieved from indexedDB
+    // no dice ...
+    const root = this.settings.root_dir;
+    this.rootDir = root ? root : await navigator.storage.getDirectory(); 
+    this.requestPermission = root !== undefined;
+    
+    // workaround: open browser file system which does not require permission
+    // this.rootDir = await navigator.storage.getDirectory(); 
+  }
+
+  permissionTemplate() {
+    this.requestPermission = false;
+    return html`
+      <sl-dialog label="Permission" open>
+        App requires access to ${this.rootDir.kind} ${this.rootDir.name}.
+        <sl-button slot="footer"
+          @click=${async () => {
+            this.renderRoot.querySelector('sl-dialog').hide();
+            this.rootDir = await navigator.storage.getDirectory(); 
+            this.requestUpdate();
+        }}>Deny</sl-button>
+        <sl-button slot="footer" variant="primary"
+          @click=${async () => {
+            // workaround to get browser to grant permission
+            this.rootDir = await (window as any).showDirectoryPicker({ mode: "readwrite" });
+            this.renderRoot.querySelector('sl-dialog').hide();
+            this.requestUpdate();
+        }}>Grant</sl-button>
+      </sl-dialog>
+    `;
   }
 
   render() {
+    // if (this.requestPermission) return this.permissionTemplate();
     if (!this.rootDir) return html`<sl-spinner></sl-spinner>`;
     return html`
+      <header>
+        <sl-icon-button name="folder-open-outline"
+          @click=${async () => {
+            this.rootDir = await (window as any).showDirectoryPicker({ mode: "readwrite" });
+            this.settings.root_dir = this.rootDir;
+            this.requestUpdate();
+          }}></sl-icon-button>
+        <sl-icon-button name="folder-star-outline"
+          @click=${async () => {
+            this.rootDir = await navigator.storage.getDirectory();
+            this.settings.root_dir = undefined;   // use undefined to mark browser file system
+            this.requestUpdate();
+          }}></sl-icon-button>
+      </header>    
       <sl-tree>
         <leaf-file-handle .file_handle=${this.rootDir}></leaf-file-handle>
       </sl-tree>
@@ -37,7 +104,7 @@ export class LeafFileViewer extends LitElement {
 
 @customElement('leaf-file-handle')
 class LeafFileHandle extends LitElement {
-
+  
   static styles = [
     shared_css,
     css`
@@ -158,7 +225,7 @@ class LeafFileHandle extends LitElement {
       if (this.file_handle.kind === 'directory') {
         this.open = !this.open;
       } else {
-        this.dispatchEvent(new CustomEvent('open-file', {
+        this.dispatchEvent(new CustomEvent('leaf-open', {
           detail: this.file_handle,
           bubbles: true, composed: true
         }));
@@ -173,7 +240,6 @@ class LeafFileHandle extends LitElement {
       switch (event.detail.item.value) {
         case 'newfile':
           await fh.getFileHandle('untitled.nb', { create: true });
-          console.log("create new file", fh);
           break;
         case 'newdir':
           await fh.getDirectoryHandle("Untitled", { create: true });
@@ -199,7 +265,6 @@ class LeafFileHandle extends LitElement {
       }
     });
     input.addEventListener("dblclick", () => {
-      console.log('double click', input);
       input.disabled = false;
     });
     this.renderRoot.querySelector(".item").addEventListener("contextmenu", (event: PointerEvent) => {
