@@ -77,22 +77,28 @@ export class LeafEntity extends LitElement {
     }
 
     format(value, fmt: string = undefined) {
-      if (fmt) {
-        if (!fmt.startsWith(':')) fmt = ':' + fmt;
-      } else {
-        switch (typeof(value)) {
-          case 'string': 
-            return value;
-          case 'number': 
-            if (Number.isInteger(value)) return value;
-            fmt = ':.2f';  break;
-          case 'boolean': 
-            fmt = value ? 'on' : 'off';  break;
-          default: 
-            return JSON.stringify(value);
-        }  
-      }
-      return (`{${fmt}}` as any).format(value);
+      try {
+        if (fmt) {
+          if (!fmt.startsWith(':')) fmt = ':' + fmt;
+        } else {
+          switch (typeof(value)) {
+            case 'string': 
+              return value;
+            case 'number': 
+              if (Number.isInteger(value)) return value;
+              fmt = ':.2f';  break;
+            case 'boolean': 
+              fmt = value ? 'on' : 'off';  break;
+            default: 
+              return JSON.stringify(value);
+          }  
+        }
+        return (`{${fmt}}` as any).format(value);
     }
+    catch (e) {
+      console.log("***** leaf-entity.format", e, value, fmt);
+      return JSON.stringify(value);
+    }
+  }
 
 }

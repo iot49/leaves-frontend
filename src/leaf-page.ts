@@ -113,7 +113,7 @@ export class LeafPage extends LitElement {
           flex-direction: column-reverse;
           background-color: yellow;
         }
-        .dropdown {
+        .mobile .dropdown {
           background-color: pink;
           top: auto;
           bottom: 2rem;

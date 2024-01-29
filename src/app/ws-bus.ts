@@ -33,7 +33,7 @@ export class WsBus implements Bus {
         // create a new websocket
         this.connect();
       }
-    }, 2000);
+    }, 5000);
 
     const handler = this.status_event.bind(this);
     this._ws.addEventListener("open", handler);

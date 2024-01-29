@@ -67,7 +67,7 @@ export class LeafFileViewer extends LitElement {
   }
 
   render() {
-    // if (this.requestPermission) return this.permissionTemplate();
+    if (this.requestPermission) return this.permissionTemplate();
     if (!this.rootDir) return html`<sl-spinner></sl-spinner>`;
     return html`
       <header>
@@ -102,8 +102,9 @@ export class LeafFileViewer extends LitElement {
 }
 
 
+// Note: export not used, only to satisfy vite build
 @customElement('leaf-file-handle')
-class LeafFileHandle extends LitElement {
+export class LeafFileHandle extends LitElement {
   
   static styles = [
     shared_css,

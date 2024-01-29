@@ -81,9 +81,9 @@ export class LeafMain extends LitElement implements App {
   }
   private cache = {
     app_name: '*',  // ble-bus: set to config/app/name to offer connecting only to one backend
-    // 10.0.0.225
-    backend_ip: "`${this.app_name}.local`",
-    backend_ws: "`ws://${this.backend_ip}/ws`",
+    // backend_url: this.config.get('secrets/hostname'),
+    backend_url: "dev.backend.leaf49.org",
+    backend_ws: "`wss://${this.backend_url}/ws`",
     auto_connect: false,
     dark_theme: false,
     firmware_url: "/firmware/index.json",

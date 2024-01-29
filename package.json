@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && mv dist/assets/svg dist/assets/icons && cp -a dist/ ../cloud/volumes/nginx-html",
     "preview": "vite preview",
     "debug": "vite --debug"
   },
@@ -32,6 +32,7 @@
     "@types/web-bluetooth": "^0.0.20",
     "typescript": "^5.0.2",
     "vite": "^5.0.9",
+    "vite-plugin-pwa": "^0.17.5",
     "vite-plugin-static-copy": "^1.0.0"
   }
 }

@@ -5,11 +5,12 @@ import { app } from "..";
 const _CONNECTOR_SERVICE = "4d8b9851-05af-4ea0-99a5-cdbf9fd4104b";
 const _CONNECTOR_RX      = "4d8b9852-05af-4ea0-99a5-cdbf9fd4104b";
 const _CONNECTOR_TX      = "4d8b9853-05af-4ea0-99a5-cdbf9fd4104b";
+// const _ADV_MANUFACTURER  = 0xa748;
 
 const _MSG_PART          = 0x1;
 const _MSG_COMPLETE      = 0x2;
 
-const _MTU               = 512;
+const _MTU               = 512;   // TODO: get from server?
 
 if (!("TextEncoder" in window)) 
     app.overlay = html`<sl-dialog label="BleBus" open>Browser does not support TextEncoder, please upgrade!</sl-dialog>`;
@@ -34,25 +35,37 @@ export class BleBus {
   public async connect(app_name?: string) {
     this.disconnect();
     try {
-      const filters: any[] = [ { services: [_CONNECTOR_SERVICE] } ];
+      const filters: any[] = [ { 
+        services: [_CONNECTOR_SERVICE],
+        // manufacturerData: [{ companyIdentifier: _ADV_MANUFACTURER }]
+      } ];
       if (app_name && app_name !== '*') filters.push({ name: app_name });
       const device = await navigator.bluetooth.requestDevice({ filters: filters });
-      console.log("connected to", device.name, 'app-name =', app_name);
+      console.log("connecting to", device.name, 'app-name =', app_name);
+      console.log('A0', device, device.name);
       device.addEventListener('gattserverdisconnected', this.onDisconnected.bind(this));
+      console.log('A1', device);
       const server  = await device.gatt.connect();
+      console.log('A2');
       const service = await server.getPrimaryService(_CONNECTOR_SERVICE);
+      console.log('A3');
       const tx_char = await service.getCharacteristic(_CONNECTOR_TX);
       tx_char.startNotifications()
+      console.log('A4');
       tx_char.addEventListener('characteristicvaluechanged', this.valueChanged.bind(this));
+      console.log('A5');
       this.rx_characteristic = await service.getCharacteristic(_CONNECTOR_RX);
-      this.device = device;   // indicates we have a connection
+      console.log('A6');
+      // FIX this.device = device;   // indicates we have a connection
+      console.log('A7');
       window.dispatchEvent(new CustomEvent('leaf-connection', { 
         bubbles: true, 
         composed: true, 
         detail: this.connected,
       }));
+      console.log('A8');
     } catch (error) {
-      console.error("***** connect:", error);
+      console.error("***** connect:", error, this.device);
   }
 
   }
@@ -68,6 +81,7 @@ export class BleBus {
   public get connected(): boolean { return this.device !== null; }
 
   public async send(msg: string) {
+    console.log('send', msg)
     if (!this.send_queue) {
       this.send_queue = queue(async (task, callback) => {
         if (!this.connected) { 
@@ -75,6 +89,7 @@ export class BleBus {
           callback(); 
           return; 
         }
+        console.log('send process', task);
         const encoded = (new TextEncoder()).encode(task);
         // max ble message length
         const N = _MTU - 1;  // one byte for type
@@ -97,6 +112,7 @@ export class BleBus {
 
   private onDisconnected() {
     this.device = null;
+    console.log('ble-bus.onDisconnected')
     window.dispatchEvent(new CustomEvent('leaf-connection', { 
       bubbles: true, 
       composed: true, 
@@ -109,6 +125,7 @@ export class BleBus {
     const data = new Uint8Array(event.target.value.buffer);
     // split off 1st byte (_MSG_PART / _MSG_COMPLETE) and convert to string
     const msg = dec.decode(data.slice(1, data.length));
+    console.log('valueChanged', msg);
     // assemble parts
     this.rx_buffer += msg;
     if (event.target.value.getUint8(0) == _MSG_COMPLETE) {

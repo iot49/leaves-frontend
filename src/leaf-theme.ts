@@ -1,6 +1,5 @@
 import { html, css, LitElement } from 'lit';
-import { customElement, query } from 'lit/decorators.js';
-import { SlSwitch } from '@shoelace-style/shoelace';
+import { customElement } from 'lit/decorators.js';
 import { shared_css } from './assets/css/shared_styles';
 
 

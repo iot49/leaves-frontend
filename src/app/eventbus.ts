@@ -55,7 +55,7 @@ class _EventBus implements EventBus {
 
   constructor() {
     const PING_INTERVAL = 1000;
-    const WDT_TIMEOUT = 5000;
+    const WDT_TIMEOUT = 500000; // FIX 5000;
     window.addEventListener('leaf-event', _ => {
       // reset wdt to "feed" it
       clearInterval(this.wdtId);
@@ -68,6 +68,7 @@ class _EventBus implements EventBus {
           if (this.connected) {
             this.postEvent({ type: 'ping' })
           } else {
+            console.log('disconnected, no more pings');
             clearInterval(pingId);
           }
         }, PING_INTERVAL);
